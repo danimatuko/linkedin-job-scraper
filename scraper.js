@@ -47,6 +47,23 @@ const scrapeJobDetails = async (page, jobLink) => {
 };
 
 /**
+ * Convert the jobs array to a CSV string.
+ * @param {object[]} data - An array of objects to be converted to CSV.
+ * @returns {string} A CSV string.
+ */
+const convertToCsv = (data) => {
+  const keys = Object.keys(data[0]);
+  const csv = [keys.join(",")];
+
+  data.forEach((row) => {
+    const values = keys.map((key) => `"${row[key]}"`);
+    csv.push(values.join(","));
+  });
+
+  return csv.join("\n");
+};
+
+/**
  * Main function to initiate the scraping process.
  */
 const main = async () => {
@@ -71,10 +88,14 @@ const main = async () => {
   clearInterval(loaderInterval);
 
   try {
-    await fs.writeFile("jobData.json", JSON.stringify(jobDetails, null, 2, "utf-8"));
-    console.log("\n \x1b[32mData scraped and saved to jobData.json\x1b[0m");
+    // Convert jobDetails to a CSV string
+    const csvData = convertToCsv(jobDetails);
+
+    // Write the CSV data to a file
+    await fs.writeFile("jobData.csv", csvData, "utf-8");
+    console.log("\n \x1b[32mData scraped and saved to jobData.csv\x1b[0m");
   } catch (error) {
-    console.error(`\n Error writing to jobData.json: ${error}`);
+    console.error(`\n Error writing to jobData.csv: ${error}`);
   }
 };
 
