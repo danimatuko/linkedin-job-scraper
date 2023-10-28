@@ -92,10 +92,10 @@ const main = async () => {
     const csvData = convertToCsv(jobDetails);
 
     // Write the CSV data to a file
-    await fs.writeFile("jobData.csv", csvData, "utf-8");
-    console.log("\n \x1b[32mData scraped and saved to jobData.csv\x1b[0m");
+    await fs.writeFile("jobsData.csv", csvData, "utf-8");
+    console.log("\n \x1b[32mData scraped and saved to jobsData.csv\x1b[0m");
   } catch (error) {
-    console.error(`\n Error writing to jobData.csv: ${error}`);
+    console.error(`\n Error writing to jobsData.csv: ${error}`);
   }
 };
 
