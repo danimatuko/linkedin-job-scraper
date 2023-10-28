@@ -17,6 +17,10 @@ Before using this script, make sure you have the following prerequisites:
 - **⚙️ Node.js installed** on your system.
 - 📦 The necessary dependencies installed by running the following command in your project directory:
 
+```
+npm install
+```
+
 ## 💻 Technologies
 
 This project is built using the following technologies:
