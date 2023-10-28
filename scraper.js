@@ -1,67 +1,70 @@
 import puppeteer from "puppeteer";
-import fs from "fs";
+import fs from "fs/promises";
+
+const scrapeJobDetails = async (page, jobLink) => {
+  const selectors = {
+    title: "h1.topcard__title",
+    company: "[href^='https://www.linkedin.com/company/']",
+    location: ".topcard__flavor.topcard__flavor--bullet",
+    description: "section.show-more-less-html",
+  };
+
+  // Navigate to the job's page
+  await page.goto(jobLink, { waitUntil: "domcontentloaded" });
+
+  // Wait for a certain period to ensure details are loaded
+  await page.waitForTimeout(5000);
+
+  // Extract job details
+  const title = await page.$eval(selectors.title, (el) => el.textContent.trim());
+  const company = await page.$eval(selectors.company, (el) => el.textContent.trim());
+  const location = await page.$eval(selectors.location, (el) => el.textContent.trim());
+  const description = await page.$eval(selectors.description, (el) =>
+    el.textContent
+      .replace(/\s+/g, " ")
+      .replace(/\b(Show more|Show less)\b/g, "")
+      .trim()
+  );
+
+  return {
+    title,
+    company,
+    location,
+    description,
+  };
+};
 
 (async () => {
-  // Launch the browser
-  const browser = await puppeteer.launch({
-    headless: false,
-    defaultViewport: null,
-    args: ["--start-maximized"],
-  });
-
-  // Create a page
+  // Launch a headless browser
+  const browser = await puppeteer.launch();
   const page = await browser.newPage();
-  const searchTerm = "Web developer";
+  const searchTerm = "Web Developer";
 
-  try {
-    // Go to LinkedIn job search page
-    await page.goto(
-      `https://www.linkedin.com/jobs/search/?keywords=${searchTerm}`
-    );
+  // Navigate to the LinkedIn job search page with the specified search term
+  await page.goto(`https://www.linkedin.com/jobs/search/?keywords=${searchTerm}`);
 
-    // Wait for the job listings to load
-    await page.waitForSelector("a.base-card__full-link");
+  // Extract job links from the starting page
+  const jobLinks = await page.$$eval("a.base-card__full-link", (links) => links.map((a) => a.href));
 
-    // Extract job details
-    const jobList = await page.evaluate(async () => {
-      const jobElements = document.querySelectorAll("a.base-card__full-link");
-      const jobs = [];
+  // Array to store job listing details
+  const jobDetails = [];
 
-      for (const jobElement of jobElements) {
-        jobElement.click();
-        await new Promise((resolve) => setTimeout(resolve, 5000)); // Wait for details to load
-
-        const job = {};
-        job.title =
-          document
-            .querySelector("h2.top-card-layout__title")
-            ?.textContent.trim() || "N/A";
-        job.company =
-          document
-            .querySelector(".topcard__org-name-link")
-            ?.textContent.trim() || "N/A";
-        job.location =
-          document
-            .querySelector(".topcard__flavor topcard__flavor--bullet")
-            ?.textContent.trim() || "N/A";
-        job.description =
-          document
-            .querySelector(".show-more-less-html__markup")
-            ?.textContent.trim() || "N/A";
-
-        jobs.push(job);
-        // window.history.back(); // Go back to the search results
-      }
-
-      return jobs;
-    });
-
-    // Write the job data to a JSON file
-    fs.writeFileSync("jobs.json", JSON.stringify(jobList, null, 2));
-    console.log("Job data saved to jobs.json");
-  } catch (error) {
-    console.error("An error occurred:", error);
-  } finally {
-    await browser.close();
+  // Iterate through job links and scrape details
+  for (const jobLink of jobLinks) {
+    const details = await scrapeJobDetails(page, jobLink);
+    jobDetails.push(details);
   }
+
+  // Close the browser
+  await browser.close();
+
+  // Save the scraped job data to a JSON file
+  try {
+    // Convert jobDetails to JSON and write it to "jobData.json" asynchronously
+    await fs.writeFile("jobData.json", JSON.stringify(jobDetails, null, 2, "utf-8"));
+    console.log("Data scraped and saved to jobData.json");
+  } catch (error) {
+    console.error(`Error writing to jobData.json: ${error}`);
+  }
+  console.log("Data scraped and saved to jobData.json");
 })();

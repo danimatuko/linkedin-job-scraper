@@ -1,4 +1,5 @@
-jobs.json
+jobsData.json
+
 # Logs
 logs
 *.log
